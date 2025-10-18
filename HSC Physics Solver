@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSC Physics Solver & Question Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU07EWpWcLsRjQqmeG2B3ALqsSEpM6AWMPsm5C/toContainHtFCflscNtvilAnEQUm" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGohHnVvGIlwQ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <!-- Marked.js for Markdown to HTML conversion -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Hind Siliguri', 'Inter', sans-serif;
+        }
+        .katex-display {
+            display: block;
+            text-align: center;
+            margin: 1em auto;
+            padding: 0.5em 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab-button.active {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .prose img, .prose svg {
+             display: block;
+             margin-left: auto;
+             margin-right: auto;
+             max-width: 100%;
+             height: auto;
+        }
+        .prose-dark img { filter: invert(1) hue-rotate(180deg); }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-blue-600 dark:text-blue-400">HSC পদার্থবিজ্ঞান সলভার ও প্রশ্ন জেনারেটর</h1>
+            <p class="text-md sm:text-lg text-gray-600 dark:text-gray-400 mt-2">বাংলাদেশ জাতীয় শিক্ষাক্রম (NCTB)</p>
+        </header>
+
+        <main class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8">
+            
+            <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+                <nav class="flex space-x-4" aria-label="Tabs">
+                    <button class="tab-button active text-lg py-3 px-4 border-b-2 border-transparent transition" data-tab="solver">প্রশ্ন সমাধান করুন</button>
+                    <button class="tab-button text-lg py-3 px-4 border-b-2 border-transparent transition" data-tab="generator">প্রশ্ন তৈরি করুন</button>
+                </nav>
+            </div>
+
+            <div>
+                <!-- Solver Tab -->
+                <div id="solver-tab" class="tab-content active">
+                    <div class="mb-6">
+                        <label for="question-input" class="block text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">আপনার প্রশ্নটি লিখুন:</label>
+                        <textarea id="question-input" rows="4" class="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500" placeholder="যেমন: একটি বস্তু স্থির অবস্থা থেকে 2 m/s² সুষম ত্বরণে ১০ সেকেন্ড চললে এর শেষ বেগ ও অতিক্রান্ত দূরত্ব কত?"></textarea>
+                    </div>
+                    
+                    <div class="mb-6">
+                         <label for="image-upload" class="block text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">অথবা, প্রশ্নের ছবি আপলোড করুন:</label>
+                         <input type="file" id="image-upload" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"/>
+                         <div id="image-preview-container" class="mt-4 hidden">
+                            <p class="text-sm font-medium mb-2">নির্বাচিত ছবি:</p>
+                            <img id="image-preview" src="" alt="Image Preview" class="max-w-xs max-h-48 rounded-lg border border-gray-300 dark:border-gray-600"/>
+                            <button id="remove-image" class="mt-2 text-sm text-red-600 hover:text-red-800">ছবি সরান</button>
+                         </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button id="solve-button" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                            <span id="solve-button-text">সমাধান করুন</span>
+                            <div id="solve-loading-spinner" class="hidden w-5 h-5 border-t-2 border-r-2 border-white rounded-full animate-spin mx-auto"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generator Tab -->
+                <div id="generator-tab" class="tab-content">
+                     <div class="mb-6">
+                        <label for="chapter-input" class="block text-lg font-medium mb-2 text-gray-700 dark:text-gray-300">পদার্থবিজ্ঞানের অধ্যায়ের নাম লিখুন:</label>
+                        <input type="text" id="chapter-input" class="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500" placeholder="যেমন: ভেক্টর, নিউটনীয় বলবিদ্যা, চল তড়িৎ">
+                    </div>
+                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button id="generate-cq-button" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                           <span id="cq-button-text">কঠিন সৃজনশীল প্রশ্ন (CQ)</span>
+                           <div id="cq-loading-spinner" class="hidden w-5 h-5 border-t-2 border-r-2 border-white rounded-full animate-spin mx-auto"></div>
+                        </button>
+                        <button id="generate-mcq-button" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300">
+                            <span id="mcq-button-text">বহুনির্বাচনী প্রশ্ন (MCQ)</span>
+                           <div id="mcq-loading-spinner" class="hidden w-5 h-5 border-t-2 border-r-2 border-white rounded-full animate-spin mx-auto"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="error-message" class="hidden mt-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 rounded-lg">
+                <p><strong class="font-bold">ত্রুটি:</strong> <span id="error-text"></span></p>
+            </div>
+
+            <div id="output-container" class="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6 hidden">
+                <h2 id="output-title" class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">ফলাফল:</h2>
+                <div id="output-content" class="prose dark:prose-invert max-w-none text-base leading-relaxed"></div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+            <p>&copy; ২০২৫ HSC Physics Solver. Powered by AI.</p>
+            <p class="mt-1">বিঃদ্রঃ সমাধানগুলো AI দ্বারা তৈরি এবং শুধুমাত্র পড়াশোনার সহায়ক হিসেবে ব্যবহার করা উচিত। সর্বদা আপনার পাঠ্যবই এবং শিক্ষকের সাথে যাচাই করে নিন।</p>
+        </footer>
+
+    </div>
+
+    <script>
+        let uploadedImageBase64 = null;
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const questionInput = document.getElementById('question-input');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image');
+        const solveButton = document.getElementById('solve-button');
+        const solveButtonText = document.getElementById('solve-button-text');
+        const solveLoadingSpinner = document.getElementById('solve-loading-spinner');
+        const chapterInput = document.getElementById('chapter-input');
+        const generateCqButton = document.getElementById('generate-cq-button');
+        const cqButtonText = document.getElementById('cq-button-text');
+        const cqLoadingSpinner = document.getElementById('cq-loading-spinner');
+        const generateMcqButton = document.getElementById('generate-mcq-button');
+        const mcqButtonText = document.getElementById('mcq-button-text');
+        const mcqLoadingSpinner = document.getElementById('mcq-loading-spinner');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const outputContainer = document.getElementById('output-container');
+        const outputTitle = document.getElementById('output-title');
+        const outputContent = document.getElementById('output-content');
+        
+        const API_KEY = "";
+        const API_URL_TEXT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(`${button.dataset.tab}-tab`).classList.add('active');
+                outputContainer.classList.add('hidden');
+                hideError();
+            });
+        });
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    uploadedImageBase64 = reader.result.split(',')[1];
+                    imagePreview.src = reader.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', () => {
+            uploadedImageBase64 = null;
+            imagePreview.src = "";
+            imageUpload.value = ""; 
+            imagePreviewContainer.classList.add('hidden');
+        });
+
+        solveButton.addEventListener('click', handleSolve);
+        generateCqButton.addEventListener('click', () => handleGenerate('cq'));
+        generateMcqButton.addEventListener('click', () => handleGenerate('mcq'));
+
+        async function handleSolve() {
+            const question = questionInput.value.trim();
+            if (!question && !uploadedImageBase64) {
+                displayError("অনুগ্রহ করে একটি প্রশ্ন লিখুন অথবা একটি ছবি আপলোড করুন।");
+                return;
+            }
+            hideError();
+            setLoadingState('solve', true);
+            outputContainer.classList.add('hidden');
+
+            try {
+                // THIS IS THE UPDATED, MORE POWERFUL SYSTEM PROMPT
+                const systemPrompt = `You are a highly meticulous and experienced physics examiner and tutor, specializing in the Bangladesh Higher Secondary Certificate (HSC) curriculum. Your expertise is equivalent to having deeply studied and cross-referenced all major NCTB-approved textbooks, including those by Dr. Shahjahan Tapan, Mohammad Ishaque, Amir Hossain Khan, and others. You are also an expert on the question patterns, difficulty, and nuances of past HSC Board Exams and university admission tests (BUET, DU, Medical, and other engineering universities).
+
+                Your primary directive is **maximum accuracy**. An incorrect answer is unacceptable.
+
+                When presented with a physics problem (from text or image):
+
+                1.  **Identify Core Concepts:** First, identify the fundamental physics principles the question is testing (e.g., projectile motion, Kirchhoff's laws).
+                2.  **Recall Question Patterns:** Mentally reference how similar problems are framed in HSC board exams and engineering admission tests to understand the expected depth of the solution.
+                3.  **Execute the Solution in Bengali (using Markdown and LaTeX):**
+                    * **দেওয়া আছে (Given):** Meticulously list all known values with their correct symbols and SI units.
+                    * **বের করতে হবে (To Find):** Clearly state the objective.
+                    * **সূত্র (Formula):** State the primary physics formula(s). Briefly mention the principle behind it.
+                    * **সমাধান (Solution):** Show every step of the calculation. Substitute values with units. Double-check your arithmetic and algebraic manipulations. Explain the logic for each transition.
+                    * **উত্তর (Answer):** State the final numerical answer with correct units and appropriate significant figures.
+                4.  **Self-Correction/Verification:** After solving, perform a "sanity check." Does the answer make physical sense? If the question is ambiguous, state any assumptions made.
+                5.  **Diagrams:** If a diagram (free-body, circuit, etc.) is crucial, generate a clean, accurate, and well-labeled SVG code block.
+                6.  **Language and Formatting:** All explanations must be in clear Bengali. All mathematical expressions MUST be correctly formatted using LaTeX delimiters ($...$ for inline and $$...$$ for display). Ensure your markdown is clean.`;
+
+                const userParts = [];
+                if (question) userParts.push({ text: "এই প্রশ্নটি সমাধান কর: " + question });
+                if (uploadedImageBase64) userParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedImageBase64 } });
+
+                const payload = {
+                    contents: [{ role: "user", parts: userParts }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const resultText = await makeApiCall(API_URL_TEXT, payload);
+                displayOutput("সমাধান:", resultText);
+
+            } catch (error) {
+                console.error("Error solving:", error);
+                displayError("সমাধান পেতে ব্যর্থ। নেটওয়ার্ক বা API-তে সমস্যা হতে পারে।");
+            } finally {
+                setLoadingState('solve', false);
+            }
+        }
+
+        async function handleGenerate(type) {
+            const chapter = chapterInput.value.trim();
+            if (!chapter) {
+                displayError("অনুগ্রহ করে একটি অধ্যায়ের নাম লিখুন।");
+                return;
+            }
+            hideError();
+            setLoadingState(type, true);
+            outputContainer.classList.add('hidden');
+
+            const questionType = type === 'cq' ? 'সৃজনশীল প্রশ্ন (CQ)' : 'বহুনির্বাচনী প্রশ্ন (MCQ)';
+            const instructions = type === 'cq'
+                ? `একটি উদ্দীপক (stem) এবং এর উপর ভিত্তি করে জ্ঞান (ক), অনুধাবন (খ), প্রয়োগ (গ), এবং উচ্চতর দক্ষতা (ঘ) স্তরের চারটি প্রশ্ন তৈরি করুন।`
+                : `সঠিক উত্তরসহ ৫টি মানসম্মত বহুনির্বাচনী প্রশ্ন তৈরি করুন।`;
+
+            try {
+                const systemPrompt = `You are an experienced HSC physics question setter for the Bangladesh Education Board. Create challenging questions based on the NCTB curriculum and past board/admission test patterns.
+                - **Language:** The entire output must be in Bengali.
+                - **LaTeX:** Use clean LaTeX for all mathematical notations ($...$ or $$...$$).`;
+                
+                const userQuery = `পদার্থবিজ্ঞানের "${chapter}" অধ্যায় থেকে, আমার জন্য কিছু কঠিন ${questionType} তৈরি করুন। ${instructions}`;
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+                const resultText = await makeApiCall(API_URL_TEXT, payload);
+                displayOutput(`${questionType}:`, resultText);
+            } catch (error) {
+                console.error(`Error generating ${type}:`, error);
+                displayError("প্রশ্ন তৈরি করতে ব্যর্থ। নেটওয়ার্ক বা API-তে সমস্যা হতে পারে।");
+            } finally {
+                setLoadingState(type, false);
+            }
+        }
+        
+        async function makeApiCall(url, payload) {
+            let response;
+            let retries = 3;
+            let delay = 1000;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) break;
+                } catch (error) { console.error('Fetch error:', error); }
+                if (i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                } else { throw new Error("API request failed after multiple retries."); }
+            }
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+            }
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                return candidate.content.parts[0].text;
+            } else {
+                console.error("Unexpected API response:", result);
+                if(result.promptFeedback && result.promptFeedback.blockReason) {
+                    throw new Error(`Blocked for: ${result.promptFeedback.blockReason}.`);
+                }
+                throw new Error("AI থেকে কোনো বৈধ উত্তর পাওয়া যায়নি।");
+            }
+        }
+
+        function displayOutput(title, markdownText) {
+            outputTitle.textContent = title;
+            outputContent.innerHTML = marked.parse(markdownText);
+            renderMathInElement(outputContent, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+            outputContainer.classList.remove('hidden');
+        }
+
+        function displayError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function setLoadingState(type, isLoading) {
+            let button, text, spinner;
+            if (type === 'solve') [button, text, spinner] = [solveButton, solveButtonText, solveLoadingSpinner];
+            else if (type === 'cq') [button, text, spinner] = [generateCqButton, cqButtonText, cqLoadingSpinner];
+            else [button, text, spinner] = [generateMcqButton, mcqButtonText, mcqLoadingSpinner];
+
+            if (isLoading) {
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+                button.disabled = true;
+                button.classList.add('cursor-not-allowed', 'opacity-75');
+            } else {
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                button.disabled = false;
+                button.classList.remove('cursor-not-allowed', 'opacity-75');
+            }
+        }
+    </script>
+</body>
+</html>
